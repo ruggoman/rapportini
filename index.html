@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit81 — D.Lgs. 81/08</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f4f6fb;display:flex;flex-direction:column;min-height:100vh;font-size:13px;}
+:root{--blu:#1e50a0;--verde:#27ae60;--rosso:#c0392b;--arancio:#e67e22;--grigio:#7f8c8d;}
+
+/* HEADER */
+#header{background:var(--blu);padding:11px 22px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+#header h1{font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;}
+#header span{font-size:12px;color:#aabbdd;}
+
+/* TABS */
+#tabbar{background:#e8eef8;border-bottom:2px solid #c8d4ec;display:flex;gap:2px;padding:0 14px;flex-shrink:0;overflow-x:auto;}
+.tab-btn{background:transparent;border:none;border-bottom:2px solid transparent;border-radius:4px 4px 0 0;padding:10px 15px;cursor:pointer;font-weight:400;color:#555;font-size:12px;white-space:nowrap;transition:.15s;}
+.tab-btn.active{background:#fff;border-bottom-color:var(--blu);font-weight:700;color:var(--blu);}
+.tab-btn:hover:not(.active){background:#f0f4ff;}
+
+/* CONTENT */
+#content{flex:1;overflow-y:auto;padding:16px 20px;}
+.tab-panel{display:none;} .tab-panel.active{display:block;}
+
+/* BOTTOM BAR */
+#bottombar{background:#dde4f0;border-top:2px solid #c8d4ec;padding:8px 14px;flex-shrink:0;}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;align-items:center;}
+button.btn{border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px;color:#fff;font-family:inherit;}
+button.btn:hover{filter:brightness(1.1);}
+.btn-blu{background:var(--blu);}
+.btn-verde{background:#2e7d50;}
+.btn-grigio{background:#888;}
+.btn-viola{background:#6a3d9a;}
+.btn-arancio{background:#b06000;}
+.btn-rosso{background:var(--rosso);}
+#stato{font-size:12px;font-weight:600;margin-left:8px;}
+#stato.ok{color:var(--verde);}#stato.warn{color:var(--arancio);}#stato.err{color:var(--rosso);}
+
+/* FORM */
+.section-title{color:var(--blu);font-size:15px;font-weight:700;margin:0 0 10px;}
+.card{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid #e0e6f0;margin-bottom:16px;}
+.form-row{display:flex;align-items:center;margin-bottom:10px;gap:8px;}
+.form-row label{width:195px;color:#444;flex-shrink:0;}
+.form-row input[type=text]{flex:1;border:1px solid #ccc;border-radius:4px;padding:6px 10px;font-size:13px;font-family:inherit;}
+.form-row input:focus{outline:2px solid var(--blu);border-color:var(--blu);}
+.hint{font-size:11px;color:#999;margin-top:2px;}
+
+/* FIRMA */
+.firma-wrap{border:1px solid #ddd;border-radius:6px;overflow:hidden;background:#fff;display:inline-block;}
+.firma-header{background:#f0f0f0;display:flex;justify-content:space-between;align-items:center;padding:4px 10px;}
+.firma-header span{font-weight:600;font-size:12px;color:#333;}
+.firma-header button{background:none;border:none;color:var(--rosso);cursor:pointer;font-size:12px;font-weight:600;}
+canvas.firma-canvas{display:block;cursor:crosshair;touch-action:none;}
+
+/* CONFIG */
+.opt-bar{background:#fff;border-radius:8px;padding:10px 16px;border:1px solid #e0e6f0;margin-bottom:10px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;}
+.opt-bar label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;}
+.voci-list{max-height:380px;overflow-y:auto;border:1px solid #e0e6f0;border-radius:8px;background:#f9fafc;}
+.voce-row{display:flex;align-items:center;padding:7px 12px;gap:10px;border-bottom:1px solid #e8edf4;}
+.voce-row:nth-child(odd){background:#f4f6fb;}
+.voce-row:nth-child(even){background:#fff;}
+.voce-row input[type=checkbox]{accent-color:var(--blu);width:16px;height:16px;}
+.voce-cat{flex:1;font-size:12px;font-weight:600;color:var(--blu);}
+.voce-cat.custom{color:#5d3a9b;}
+.badge-custom{font-size:10px;background:#ede7f6;color:#5d3a9b;border-radius:4px;padding:2px 6px;white-space:nowrap;}
+.btn-del-voce{background:var(--rosso);color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:13px;}
+.add-voce{background:#fff;border-radius:8px;padding:14px 16px;border:1px solid #e0e6f0;margin-top:10px;}
+.add-voce h3{font-weight:700;color:var(--blu);font-size:13px;margin-bottom:8px;}
+.add-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.add-row label{width:110px;font-size:12px;color:#444;flex-shrink:0;}
+.add-row input{flex:1;border:1px solid #ccc;border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit;}
+.btn-bar{display:flex;gap:6px;margin-bottom:12px;}
+
+/* CHECKLIST */
+.info-bar{background:#fff;border-radius:6px;padding:7px 14px;margin-bottom:10px;border:1px solid #e0e6f0;display:flex;gap:16px;align-items:center;color:#666;font-size:12px;}
+.voce-item{background:#fff;border:1px solid #e0e6f0;border-radius:6px;margin-bottom:6px;overflow:hidden;}
+.voce-item.alt{background:#f4f6fb;}
+.voce-head{display:flex;align-items:flex-start;gap:8px;padding:9px 12px 6px;cursor:pointer;}
+.voce-num{color:var(--blu);font-weight:700;font-size:12px;min-width:22px;flex-shrink:0;padding-top:1px;}
+.voce-body{flex:1;}
+.voce-cat-lbl{font-weight:700;font-size:12px;color:#1a1a1a;line-height:1.4;}
+.voce-rif{font-size:11px;color:#555;font-style:italic;margin-top:3px;}
+.voce-san{font-size:11px;color:#884400;font-style:italic;margin-top:2px;}
+.btn-na{border:none;border-radius:5px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.2s;}
+.btn-na.off{background:#e8ecf4;color:#555;}
+.btn-na.on{background:var(--grigio);color:#fff;}
+.btn-expand{background:none;border:none;cursor:pointer;font-size:14px;color:var(--blu);padding:0 4px;flex-shrink:0;}
+.voce-detail{padding:0 12px 12px 42px;display:none;}
+.voce-detail.open{display:block;}
+.voce-preview{padding:0 12px 8px 42px;font-size:11px;color:#888;}
+textarea.note-area{width:100%;border:1px solid #ccc;border-radius:4px;padding:6px;font-size:12px;font-family:inherit;resize:vertical;margin-bottom:8px;}
+textarea.note-area:focus{outline:2px solid var(--blu);}
+
+/* DROPZONE */
+.dropzone{border:2px dashed #c0cde0;border-radius:6px;background:#f3f6fb;padding:8px 12px;cursor:pointer;text-align:center;font-size:12px;color:#6a80a0;transition:.2s;margin-bottom:0;user-select:none;}
+.dropzone.over{border-color:var(--blu);background:#eef4ff;}
+.foto-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.foto-item{position:relative;width:100px;cursor:grab;}
+.foto-item.dragging{opacity:.4;cursor:grabbing;}
+.foto-item.drag-over{outline:2px dashed var(--blu);border-radius:4px;}
+.foto-item img{width:100px;height:70px;object-fit:cover;border-radius:4px 4px 0 0;border:1px solid #ddd;border-bottom:none;display:block;pointer-events:none;}
+.foto-did{font-size:10px;color:#555;text-align:center;padding:2px 4px;background:#f0f0f0;border-radius:0 0 4px 4px;cursor:pointer;border:1px solid #ddd;border-top:none;white-space:normal;word-break:break-word;line-height:1.3;min-height:18px;}
+.foto-did em{color:#aaa;}
+.foto-del{position:absolute;top:2px;right:2px;background:rgba(192,57,43,.85);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:10px;line-height:18px;text-align:center;padding:0;}
+.did-tooltip{position:fixed;background:#fffacd;color:#333;border:1px solid #cca;border-radius:4px;padding:5px 8px;font-size:11px;max-width:220px;pointer-events:none;z-index:9999;box-shadow:2px 2px 6px #0002;line-height:1.4;word-break:break-word;display:none;}
+
+/* LIBERA */
+.nota-libera{border:1px solid #e0e6f0;border-radius:6px;padding:12px;margin-bottom:8px;}
+.nota-libera:nth-child(odd){background:#f4f6fb;}
+.nota-libera:nth-child(even){background:#fff;}
+.nota-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.nota-head span{font-weight:700;color:var(--blu);font-size:13px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;display:flex;align-items:center;justify-content:center;}
+.modal{background:#fff;border-radius:8px;padding:20px;width:340px;box-shadow:0 4px 24px #0003;}
+.modal h3{font-weight:700;color:var(--blu);margin-bottom:8px;font-size:14px;}
+.modal textarea{width:100%;border:1px solid #ccc;border-radius:4px;padding:6px;font-size:13px;resize:vertical;font-family:inherit;}
+.modal-btns{display:flex;gap:8px;margin-top:10px;}
+
+/* FIRME ROW */
+.firme-row{display:flex;gap:20px;flex-wrap:wrap;}
+
+@media(max-width:600px){
+  .form-row{flex-direction:column;align-items:flex-start;}
+  .form-row label{width:auto;}
+  .firme-row{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <h1>🛡 AUDIT81</h1>
+  <span>— D.Lgs 81/08 · Gestione sicurezza sul lavoro</span>
+</div>
+
+<!-- TAB BAR -->
+<div id="tabbar">
+  <button class="tab-btn active" data-tab="azienda">📋&nbsp; Dati azienda</button>
+  <button class="tab-btn" data-tab="config">⚙&nbsp; Configura voci</button>
+  <button class="tab-btn" data-tab="checklist">✅&nbsp; Checklist guidata</button>
+  <button class="tab-btn" data-tab="libera">📝&nbsp; Checklist libera</button>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+  <!-- TAB: DATI AZIENDA -->
+  <div id="tab-azienda" class="tab-panel active">
+    <h2 class="section-title">Dati identificativi</h2>
+    <div class="card">
+      <div class="form-row"><label>Ragione sociale / Azienda *</label><input type="text" id="f-azienda" placeholder="Ragione sociale..."></div>
+      <div class="form-row"><label>Data sopralluogo</label><input type="text" id="f-data" placeholder="gg/mm/aaaa"></div>
+      <div class="form-row"><label>Luogo</label><input type="text" id="f-luogo" placeholder="Città, indirizzo..."></div>
+      <div class="form-row"><label>Operatore / Consulente</label><input type="text" id="f-operatore" placeholder="Nome e cognome..."></div>
+      <div class="hint">* campo obbligatorio</div>
+    </div>
+    <h2 class="section-title">Firme</h2>
+    <div class="card">
+      <div class="firme-row">
+        <div>
+          <div class="firma-wrap">
+            <div class="firma-header"><span>Firma Consulente / Operatore</span><button onclick="clearFirma('consulente')">✕ Cancella</button></div>
+            <canvas id="firma-consulente" class="firma-canvas" width="340" height="100"></canvas>
+          </div>
+        </div>
+        <div>
+          <div class="firma-wrap">
+            <div class="firma-header"><span>Firma Responsabile Azienda</span><button onclick="clearFirma('cliente')">✕ Cancella</button></div>
+            <canvas id="firma-cliente" class="firma-canvas" width="340" height="100"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: CONFIGURA VOCI -->
+  <div id="tab-config" class="tab-panel">
+    <div class="opt-bar">
+      <strong style="font-size:13px;color:#333;">Opzioni PDF:</strong>
+      <label><input type="checkbox" id="opt-rif" checked> Mostra riferimenti legislativi</label>
+      <label><input type="checkbox" id="opt-san" checked> Mostra sanzioni</label>
+    </div>
+    <div class="btn-bar">
+      <button class="btn btn-verde" onclick="selTutte(true)">✔ Seleziona tutte</button>
+      <button class="btn btn-grigio" onclick="selTutte(false)">✗ Deseleziona tutte</button>
+    </div>
+    <div class="voci-list" id="voci-list"></div>
+    <div class="add-voce">
+      <h3>➕ Aggiungi voce personalizzata</h3>
+      <div class="add-row"><label>Categoria *</label><input type="text" id="new-cat" placeholder="Descrizione categoria..."></div>
+      <div class="add-row"><label>Rif. normativi</label><input type="text" id="new-rif" placeholder="Art. ..."></div>
+      <div class="add-row"><label>Sanzioni</label><input type="text" id="new-san" placeholder="Arresto / ammenda..."></div>
+      <button class="btn btn-blu" onclick="aggiungiVoce()">+ Aggiungi alla lista</button>
+    </div>
+  </div>
+
+  <!-- TAB: CHECKLIST GUIDATA -->
+  <div id="tab-checklist" class="tab-panel">
+    <div class="info-bar" id="info-bar">
+      Voci attive: <strong id="cnt-attive">0</strong>&nbsp;|&nbsp;
+      Con note/N/A: <strong id="cnt-compilate">0</strong>&nbsp;
+      <em style="color:#aaa">— clic su ▼ per espandere e inserire note/foto</em>
+    </div>
+    <div id="checklist-items"></div>
+  </div>
+
+  <!-- TAB: CHECKLIST LIBERA -->
+  <div id="tab-libera" class="tab-panel">
+    <div id="note-libere"></div>
+    <button class="btn btn-blu" onclick="addNotaLibera()" style="margin-top:4px;">+ Aggiungi nota</button>
+  </div>
+
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottombar">
+  <div class="btn-row">
+    <button class="btn btn-blu" onclick="generaGuidata()">🖨 PDF Checklist guidata</button>
+    <button class="btn btn-verde" onclick="generaLibera()">📄 PDF Checklist libera</button>
+    <button class="btn btn-grigio" onclick="resetApp()" style="margin-left:auto;">🗑 Reset</button>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-viola" onclick="salvaJSON()">💾 Salva rapporto (.json)</button>
+    <button class="btn btn-arancio" onclick="document.getElementById('file-json').click()">📂 Apri rapporto (.json)</button>
+    <input type="file" id="file-json" accept=".json" style="display:none" onchange="caricaJSON(event)">
+    <span id="stato"></span>
+  </div>
+</div>
+
+<!-- TOOLTIP DIDASCALIA -->
+<div id="did-tooltip" class="did-tooltip"></div>
+
+<!-- MODAL DIDASCALIA -->
+<div id="modal-did" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>Modifica didascalia</h3>
+    <textarea id="modal-txt" rows="4"></textarea>
+    <div class="modal-btns">
+      <button class="btn btn-blu" onclick="saveDidascalia()">✔ Conferma</button>
+      <button class="btn btn-grigio" onclick="closeModal()">✕ Annulla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATI VOCI
+// ═══════════════════════════════════════════════════════════════
+const VOCI_DEFAULT = [
+  {categoria:"AMBIENTI DI LAVORO, PAVIMENTI, DISLIVELLI, APERTURE, ZONE DI TRANSITO", rif:"Art. 63, commi 1, 2 e 3 in combinato disposto con l'art. 64, comma 1.", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 1.228,50 a 5.896,84 euro.", custom:false},
+  {categoria:"SCALE FISSE E PORTATILI, PONTEGGI, SISTEMI DI ACCESSO E POSIZIONAMENTO IN QUOTA", rif:"Art. 113, commi 1 e 2; art. 131, comma 1 e art. 134, commi 1 e 2; art. 116, commi 1 e 4.", sanzioni:"Arresto fino a 1 mese o ammenda da 491,40 a 1.474,21 euro; arresto da 2 a 4 mesi o ammenda da 1.228,50 a 5.896,84 euro.", custom:false},
+  {categoria:"VIABILITÀ", rif:"Art. 63, commi 1, 2 e 3 in combinato disposto con l'art. 64, comma 1.", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 1.228,50 a 5.896,84 euro.", custom:false},
+  {categoria:"IMPIANTI E ATTREZZATURE A PRESSIONE E COMPRESSORI", rif:"Art. 71, commi 4, 7 e 8 e art. 87, comma 2, lett. c); D.M. 329/04.", sanzioni:"Arresto da 3 a 6 mesi o ammenda da 2.457,02 a 6.388,23 euro.", custom:false},
+  {categoria:"ILLUMINAZIONE, MICROCLIMA, VENTILAZIONE DEI LOCALI E INQUINAMENTO INDOOR", rif:"Art. 63, comma 1, in combinato disposto con l'allegato IV del D.Lgs. 81/08.", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 1.228,50 a 5.896,84 euro.", custom:false},
+  {categoria:"AMBIENTI VARI", rif:"Art. 63, comma 1, in combinato disposto con l'allegato IV del D.Lgs. 81/08.", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 1.228,50 a 5.896,84 euro.", custom:false},
+  {categoria:"MANIPOLAZIONE, IMMAGAZZINAMENTO, TRASPORTO OGGETTI", rif:"Art. 63, commi 1, 2 e 3 in combinato disposto con l'art. 64, comma 1.", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 1.228,50 a 5.896,84 euro.", custom:false},
+  {categoria:"INCENDIO ED EMERGENZA", rif:"Art. 68, comma 2; art. 87, comma 2, lett. d).", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 1.096 a 5.260 euro.", custom:false},
+  {categoria:"MACCHINE E ATTREZZI MANUALI E PORTATILI", rif:"Art. 70, comma 1, del D.Lgs. 81/08.", sanzioni:"Arresto da 3 a 6 mesi o ammenda da 2.740 a 7.014,40 euro.", custom:false},
+  {categoria:"RISCHI DI NATURA ELETTRICA", rif:"Art. 80, comma 1, lett. a) e b) in combinato disposto con l'art. 87, comma 2, lett. c).", sanzioni:"Arresto da 3 a 6 mesi o ammenda da 2.457,02 a 6.388,23 euro.", custom:false},
+  {categoria:"PORTE E VIE DI FUGA", rif:"Art. 68, comma 2, del D.Lgs. 81/08.", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 1.096 a 5.260 euro.", custom:false},
+  {categoria:"ALTRI RISCHI", rif:"", sanzioni:"", custom:false},
+  {categoria:"DOCUMENTAZIONE", rif:"Art. 17, comma 1, lett. a) del D.Lgs. 81/08.", sanzioni:"Arresto da 3 a 6 mesi o ammenda da 3.071,27 a 7.862,44 euro.", custom:false},
+  {categoria:"DPI", rif:"Art. 77, commi 1, 2 e 4, lett. a), in combinato disposto con l'art. 87, comma 2, lett. d).", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 1.228,50 a 5.896,84 euro.", custom:false},
+  {categoria:"FORMAZIONE E NOMINE", rif:"Art. 18, comma 1, lett. b); art. 37, commi 1, 7, 9 e 10 del D.Lgs. 81/08.", sanzioni:"Arresto da 2 a 4 mesi o ammenda da 750 a 4.000 euro.", custom:false},
+  {categoria:"VARIE / OSSERVAZIONI", rif:"", sanzioni:"", custom:false},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATO APP
+// ═══════════════════════════════════════════════════════════════
+let voci = VOCI_DEFAULT.map(v => ({...v, attiva:true}));
+let risposte = []; // array di {risposta:""|"N/A", nota:"", foto:[{b64,didascalia}]}
+let noteLibere = [{testo:"", foto:[]}];
+let firme = {consulente:null, cliente:null};
+
+function oggi(){
+  const d=new Date();
+  return [String(d.getDate()).padStart(2,"0"),String(d.getMonth()+1).padStart(2,"0"),d.getFullYear()].join("/");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+    if(btn.dataset.tab==="checklist") renderChecklist();
+    if(btn.dataset.tab==="config") renderVociList();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// FIRMA CANVAS
+// ═══════════════════════════════════════════════════════════════
+function initFirma(id, key){
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext("2d");
+  let drawing=false, last=null;
+
+  function drawHint(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.font="italic 13px sans-serif";
+    ctx.fillStyle="#ccc";
+    ctx.textAlign="center";
+    ctx.fillText("Firma qui con il mouse",170,50);
+  }
+  drawHint();
+
+  function getXY(e){
+    const r=canvas.getBoundingClientRect();
+    const s=e.touches?e.touches[0]:e;
+    return [s.clientX-r.left, s.clientY-r.top];
+  }
+  function start(e){e.preventDefault();drawing=true;last=getXY(e);ctx.clearRect(0,0,canvas.width,canvas.height);}
+  function move(e){
+    e.preventDefault();
+    if(!drawing)return;
+    const [x1,y1]=getXY(e),[x0,y0]=last;
+    ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);
+    ctx.strokeStyle="#000";ctx.lineWidth=2;ctx.lineCap="round";ctx.stroke();
+    last=[x1,y1];
+  }
+  function stop(){
+    drawing=false;
+    firme[key]=canvas.toDataURL("image/png").split(",")[1];
+  }
+  canvas.addEventListener("mousedown",start);
+  canvas.addEventListener("mousemove",move);
+  canvas.addEventListener("mouseup",stop);
+  canvas.addEventListener("mouseleave",stop);
+  canvas.addEventListener("touchstart",start,{passive:false});
+  canvas.addEventListener("touchmove",move,{passive:false});
+  canvas.addEventListener("touchend",stop);
+  canvas._drawHint=drawHint;
+}
+
+function clearFirma(key){
+  const canvas=document.getElementById("firma-"+key);
+  firme[key]=null;
+  canvas._drawHint();
+}
+
+initFirma("firma-consulente","consulente");
+initFirma("firma-cliente","cliente");
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIGURA VOCI
+// ═══════════════════════════════════════════════════════════════
+function renderVociList(){
+  const el=document.getElementById("voci-list");
+  el.innerHTML=voci.map((v,i)=>`
+    <div class="voce-row">
+      <input type="checkbox" ${v.attiva?"checked":""} onchange="toggleVoce(${i})">
+      <span class="voce-cat${v.custom?" custom":""}">${escH(v.categoria)}</span>
+      ${v.custom?`<span class="badge-custom">● custom</span><button class="btn-del-voce" onclick="rimuoviCustom(${i})">🗑</button>`:""}
+    </div>`).join("");
+}
+renderVociList();
+
+function toggleVoce(i){voci[i].attiva=!voci[i].attiva;}
+function selTutte(v){voci.forEach(vo=>vo.attiva=v);renderVociList();}
+
+function aggiungiVoce(){
+  const cat=document.getElementById("new-cat").value.trim();
+  if(!cat){alert("Inserisci almeno la categoria.");return;}
+  voci.push({categoria:cat, rif:document.getElementById("new-rif").value.trim(),
+    sanzioni:document.getElementById("new-san").value.trim(), attiva:true, custom:true});
+  document.getElementById("new-cat").value="";
+  document.getElementById("new-rif").value="";
+  document.getElementById("new-san").value="";
+  renderVociList();
+}
+
+function rimuoviCustom(i){
+  if(!confirm(`Rimuovere la voce "${voci[i].categoria}"?`))return;
+  voci.splice(i,1);
+  renderVociList();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHECKLIST GUIDATA
+// ═══════════════════════════════════════════════════════════════
+function getRisposta(i){return risposte[i]||{risposta:"",nota:"",foto:[]};}
+function setRisposta(i,r){risposte[i]=r;}
+
+function renderChecklist(){
+  const attive=voci.filter(v=>v.attiva);
+  const compilate=attive.filter((_,i)=>{const r=getRisposta(i);return r.risposta==="N/A"||r.nota;});
+  document.getElementById("cnt-attive").textContent=attive.length;
+  document.getElementById("cnt-compilate").textContent=compilate.length;
+  const cont=document.getElementById("checklist-items");
+  const mostraRif=document.getElementById("opt-rif").checked;
+  const mostraSan=document.getElementById("opt-san").checked;
+  cont.innerHTML=attive.map((v,i)=>{
+    const r=getRisposta(i);
+    const isNA=r.risposta==="N/A";
+    const nota=r.nota||"";
+    const foto=r.foto||[];
+    const hasDetail=nota||foto.length>0;
+    return `
+    <div class="voce-item${i%2?" alt":""}" id="vi-${i}">
+      <div class="voce-head" onclick="toggleExpand(${i})">
+        <span class="voce-num">${i+1}</span>
+        <div class="voce-body">
+          <div class="voce-cat-lbl">${escH(v.categoria)}</div>
+          ${v.rif&&mostraRif?`<div class="voce-rif">Rif. normativi: ${escH(v.rif)}</div>`:""}
+          ${v.sanzioni&&mostraSan?`<div class="voce-san">Sanzioni: ${escH(v.sanzioni)}</div>`:""}
+        </div>
+        <button class="btn-na ${isNA?"on":"off"}" onclick="toggleNA(event,${i})">${isNA?"N/A ✓":"N/A"}</button>
+        <button class="btn-expand" id="exp-${i}">▼</button>
+      </div>
+      <div class="voce-detail" id="det-${i}">
+        <textarea class="note-area" rows="3" placeholder="Osservazioni, rilievi, note..." 
+          onchange="aggiornaNota(${i},this.value)">${escH(nota)}</textarea>
+        <div id="dz-${i}"></div>
+      </div>
+      ${hasDetail&&!document.getElementById("det-"+i)?.classList.contains("open")?
+        `<div class="voce-preview">
+          ${nota?`📝 ${escH(nota.substring(0,60))}${nota.length>60?"…":""}`:""} 
+          ${foto.length?`🖼 ${foto.length} foto`:""}
+        </div>`:""}
+    </div>`;
+  }).join("");
+  // Init dropzones
+  attive.forEach((_,i)=>{
+    const dzEl=document.getElementById("dz-"+i);
+    if(dzEl) renderDropZone(dzEl,i);
+  });
+}
+
+function toggleExpand(i){
+  const det=document.getElementById("det-"+i);
+  const exp=document.getElementById("exp-"+i);
+  const isOpen=det.classList.contains("open");
+  det.classList.toggle("open",!isOpen);
+  exp.textContent=isOpen?"▼":"▲";
+  if(!isOpen){
+    const r=getRisposta(i);
+    renderDropZone(document.getElementById("dz-"+i),i);
+  }
+}
+
+function toggleNA(e,i){
+  e.stopPropagation();
+  const r=getRisposta(i);
+  r.risposta=r.risposta==="N/A"?"":"N/A";
+  setRisposta(i,r);
+  const btn=e.currentTarget;
+  btn.className="btn-na "+(r.risposta==="N/A"?"on":"off");
+  btn.textContent=r.risposta==="N/A"?"N/A ✓":"N/A";
+  aggiornaCnt();
+}
+
+function aggiornaNota(i,val){
+  const r=getRisposta(i);
+  r.nota=val;
+  setRisposta(i,r);
+  aggiornaCnt();
+}
+
+function aggiornaCnt(){
+  const attive=voci.filter(v=>v.attiva);
+  const compilate=attive.filter((_,i)=>{const r=getRisposta(i);return r.risposta==="N/A"||r.nota;});
+  document.getElementById("cnt-attive").textContent=attive.length;
+  document.getElementById("cnt-compilate").textContent=compilate.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DROPZONE FOTO (usata sia guidata che libera)
+// ═══════════════════════════════════════════════════════════════
+// mode: "guidata" (indice voce) o "libera" (indice nota)
+function renderDropZone(container, idx, mode="guidata"){
+  const getFoto=()=>mode==="guidata"?(getRisposta(idx).foto||[]):(noteLibere[idx]?.foto||[]);
+  const setFoto=f=>{
+    if(mode==="guidata"){const r=getRisposta(idx);r.foto=f;setRisposta(idx,r);}
+    else{if(noteLibere[idx])noteLibere[idx].foto=f;}
+  };
+
+  function render(){
+    const foto=getFoto();
+    container.innerHTML=`
+      <div class="dropzone${foto.length?" has-foto":""}" 
+        id="dz-inner-${mode}-${idx}"
+        onclick="document.getElementById('fi-${mode}-${idx}').click()"
+        ondragover="event.preventDefault();this.classList.add('over')"
+        ondragleave="this.classList.remove('over')"
+        ondrop="handleDrop(event,'${mode}',${idx})">
+        ⬇ Trascina foto qui | clic per sfogliare
+      </div>
+      <input type="file" id="fi-${mode}-${idx}" multiple accept="image/*" style="display:none"
+        onchange="handleFileInput(event,'${mode}',${idx})">
+      ${foto.length?`<div class="foto-grid" id="fg-${mode}-${idx}">
+        ${foto.map((f,j)=>`
+          <div class="foto-item" draggable="true" data-mode="${mode}" data-idx="${idx}" data-j="${j}"
+            ondragstart="fotoDragStart(event,${j})"
+            ondragover="fotoDragOver(event)"
+            ondragleave="fotoDragLeave(event)"
+            ondrop="fotoDrop(event,'${mode}',${idx},${j})"
+            ondragend="fotoDragEnd(event)">
+            <img src="data:image/jpeg;base64,${f.b64}" alt="">
+            <div class="foto-did"
+              onclick="editDid('${mode}',${idx},${j})"
+              onmouseenter="showDidTooltip(event,'${(f.didascalia||'').replace(/'/g,'&#39;')}')"
+              onmouseleave="hideDidTooltip()">${f.didascalia?escH(f.didascalia):"<em>didascalia...</em>"}</div>
+            <button class="foto-del" onclick="rimuoviFoto('${mode}',${idx},${j})">×</button>
+          </div>`).join("")}
+      </div>`:""}
+    `;
+  }
+  container._render=render;
+  render();
+}
+
+async function handleDrop(e,mode,idx){
+  e.preventDefault();
+  document.getElementById(`dz-inner-${mode}-${idx}`)?.classList.remove("over");
+  const files=[...e.dataTransfer.files].filter(f=>/\.(jpe?g|png|bmp|gif|webp)$/i.test(f.name));
+  await addFoto(files,mode,idx);
+}
+
+async function handleFileInput(e,mode,idx){
+  await addFoto([...e.target.files],mode,idx);
+  e.target.value="";
+}
+
+async function addFoto(files,mode,idx){
+  const getFoto=()=>mode==="guidata"?(getRisposta(idx).foto||[]):(noteLibere[idx]?.foto||[]);
+  const setFoto=f=>{
+    if(mode==="guidata"){const r=getRisposta(idx);r.foto=f;setRisposta(idx,r);}
+    else{if(noteLibere[idx])noteLibere[idx].foto=f;}
+  };
+  const foto=[...getFoto()];
+  for(const f of files){
+    const b64=await fileToB64(f);
+    foto.push({b64,didascalia:""});
+  }
+  setFoto(foto);
+  const cont=document.getElementById(`dz-${mode==="guidata"?idx:("lib-"+idx)}`);
+  if(cont?._render)cont._render(); else if(cont){renderDropZone(cont,idx,mode);}
+}
+
+function rimuoviFoto(mode,idx,j){
+  const getFoto=()=>mode==="guidata"?(getRisposta(idx).foto||[]):(noteLibere[idx]?.foto||[]);
+  const setFoto=f=>{
+    if(mode==="guidata"){const r=getRisposta(idx);r.foto=f;setRisposta(idx,r);}
+    else{if(noteLibere[idx])noteLibere[idx].foto=f;}
+  };
+  const foto=getFoto().filter((_,i)=>i!==j);
+  setFoto(foto);
+  const cont=document.getElementById(`dz-${mode==="guidata"?idx:("lib-"+idx)}`);
+  if(cont?._render)cont._render();else if(cont)renderDropZone(cont,idx,mode);
+}
+
+// MODAL DIDASCALIA
+let modalState={mode:null,idx:null,j:null};
+function editDid(mode,idx,j){
+  const f=mode==="guidata"?(getRisposta(idx).foto||[]):(noteLibere[idx]?.foto||[]);
+  modalState={mode,idx,j};
+  document.getElementById("modal-txt").value=f[j]?.didascalia||"";
+  document.getElementById("modal-did").style.display="flex";
+}
+function saveDidascalia(){
+  const {mode,idx,j}=modalState;
+  const getFoto=()=>mode==="guidata"?(getRisposta(idx).foto||[]):(noteLibere[idx]?.foto||[]);
+  const setFoto=f=>{
+    if(mode==="guidata"){const r=getRisposta(idx);r.foto=f;setRisposta(idx,r);}
+    else{if(noteLibere[idx])noteLibere[idx].foto=f;}
+  };
+  const foto=[...getFoto()];
+  foto[j]={...foto[j],didascalia:document.getElementById("modal-txt").value.trim()};
+  setFoto(foto);
+  closeModal();
+  const cont=document.getElementById(`dz-${mode==="guidata"?idx:("lib-"+idx)}`);
+  if(cont?._render)cont._render();else if(cont)renderDropZone(cont,idx,mode);
+}
+function closeModal(){document.getElementById("modal-did").style.display="none";}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAG & DROP RIORDINO FOTO
+// ═══════════════════════════════════════════════════════════════
+let dragSrcJ=null;
+
+function fotoDragStart(e,j){
+  dragSrcJ=j;
+  e.currentTarget.classList.add("dragging");
+  e.dataTransfer.effectAllowed="move";
+  e.dataTransfer.setData("text/plain",j);
+}
+function fotoDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect="move";
+  e.currentTarget.classList.add("drag-over");
+}
+function fotoDragLeave(e){e.currentTarget.classList.remove("drag-over");}
+function fotoDragEnd(e){
+  e.currentTarget.classList.remove("dragging");
+  document.querySelectorAll(".foto-item").forEach(el=>el.classList.remove("drag-over","dragging"));
+}
+function fotoDrop(e,mode,idx,destJ){
+  e.preventDefault();e.stopPropagation();
+  e.currentTarget.classList.remove("drag-over");
+  if(dragSrcJ===null||dragSrcJ===destJ)return;
+  const getFoto=()=>mode==="guidata"?(getRisposta(idx).foto||[]):(noteLibere[idx]?.foto||[]);
+  const setFoto=f=>{
+    if(mode==="guidata"){const r=getRisposta(idx);r.foto=f;setRisposta(idx,r);}
+    else{if(noteLibere[idx])noteLibere[idx].foto=f;}
+  };
+  const foto=[...getFoto()];
+  const moved=foto.splice(dragSrcJ,1)[0];
+  foto.splice(destJ,0,moved);
+  setFoto(foto);
+  dragSrcJ=null;
+  const cont=document.getElementById(`dz-${mode==="guidata"?idx:("lib-"+idx)}`);
+  if(cont?._render)cont._render();else if(cont)renderDropZone(cont,idx,mode);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOOLTIP DIDASCALIA
+// ═══════════════════════════════════════════════════════════════
+const _tt=()=>document.getElementById("did-tooltip");
+function showDidTooltip(e,testo){
+  const t=_tt();
+  if(!testo){t.style.display="none";return;}
+  t.textContent=testo;
+  t.style.display="block";
+  const x=e.clientX+14, y=e.clientY+10;
+  const tw=t.offsetWidth,th=t.offsetHeight;
+  t.style.left=Math.min(x,window.innerWidth-tw-6)+"px";
+  t.style.top=Math.min(y,window.innerHeight-th-6)+"px";
+}
+function hideDidTooltip(){const t=_tt();if(t)t.style.display="none";}
+document.addEventListener("scroll",hideDidTooltip,true);
+
+// ═══════════════════════════════════════════════════════════════
+// CHECKLIST LIBERA
+// ═══════════════════════════════════════════════════════════════
+function renderNoteLibere(){
+  const cont=document.getElementById("note-libere");
+  cont.innerHTML=noteLibere.map((n,i)=>`
+    <div class="nota-libera">
+      <div class="nota-head">
+        <span>Nota ${i+1}</span>
+        <button class="btn btn-rosso" onclick="removeNotaLibera(${i})" style="padding:3px 10px;font-size:11px;">✕ Rimuovi</button>
+      </div>
+      <textarea class="note-area" rows="4" placeholder="Descrizione del rilievo, osservazione..."
+        onchange="noteLibere[${i}].testo=this.value">${escH(n.testo)}</textarea>
+      <div id="dz-lib-${i}"></div>
+    </div>`).join("");
+  noteLibere.forEach((_,i)=>{
+    const dz=document.getElementById("dz-lib-"+i);
+    if(dz)renderDropZone(dz,i,"libera");
+  });
+}
+
+function addNotaLibera(){noteLibere.push({testo:"",foto:[]});renderNoteLibere();}
+function removeNotaLibera(i){noteLibere.splice(i,1);if(!noteLibere.length)noteLibere=[{testo:"",foto:[]}];renderNoteLibere();}
+renderNoteLibere();
+
+// ═══════════════════════════════════════════════════════════════
+// PDF GENERATION
+// ═══════════════════════════════════════════════════════════════
+async function generaGuidata(){
+  if(!valida())return;
+  setStato("⏳ Generazione PDF...","");
+  try{
+    const attive=voci.filter(v=>v.attiva);
+    const data={
+      ...getDatiAzienda(), tipo:"guidata",
+      voci:attive, risposte:attive.map((_,i)=>getRisposta(i)),
+      mostraRif:document.getElementById("opt-rif").checked,
+      mostraSanzioni:document.getElementById("opt-san").checked,
+    };
+    const blob=await buildPDF(data);
+    scarica(blob,data.azienda,data.data);
+  }catch(e){setStato("❌ Errore: "+e.message,"err");}
+}
+
+async function generaLibera(){
+  if(!valida())return;
+  const nc=noteLibere.filter(n=>n.testo.trim());
+  if(!nc.length){setStato("⚠️ Aggiungi almeno una nota nella Checklist libera.","warn");return;}
+  setStato("⏳ Generazione PDF...","");
+  try{
+    const data={...getDatiAzienda(), tipo:"libera", note:nc.map(n=>n.testo), foto:nc.map(n=>n.foto||[])};
+    const blob=await buildPDF(data);
+    scarica(blob,data.azienda,data.data);
+  }catch(e){setStato("❌ Errore: "+e.message,"err");}
+}
+
+// Wrappa testo gestendo newline espliciti + word-wrap a maxW mm
+function wrapText(doc,text,maxW){
+  const lines=[];
+  const paragrafi=String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n");
+  paragrafi.forEach(p=>{
+    const wrapped=doc.splitTextToSize(p,maxW);
+    wrapped.forEach(l=>lines.push(l));
+  });
+  return lines;
+}
+
+async function buildPDF(data){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+  const BLU=[30,80,160],NERO=[20,20,20],GRIGIO=[180,180,180];
+  const MARG=14,W=182;
+  let pgNum=1;
+
+  function hdrFtr(){
+    doc.setFillColor(...BLU);doc.rect(0,0,210,14,"F");
+    doc.setTextColor(255,255,255);doc.setFontSize(9);doc.setFont("helvetica","bold");
+    doc.text("AUDIT81 — D.Lgs. 81/08 — Checklist Sicurezza sul Lavoro",MARG,9.5);
+    doc.setFont("helvetica","normal");
+    doc.text("Pag. "+pgNum,196,9.5,{align:"right"});
+    doc.setDrawColor(...GRIGIO);doc.setLineWidth(0.2);doc.line(MARG,287,196,287);
+    doc.setTextColor(...GRIGIO);doc.setFontSize(7);
+    doc.text(`${data.azienda||""} — ${data.data||""}`,MARG,291);
+    doc.text("Generato da Audit81 Web App",196,291,{align:"right"});
+    doc.setTextColor(...NERO);
+  }
+  hdrFtr();
+  let y=20;
+
+  // Scheda azienda
+  doc.setFillColor(240,243,250);doc.rect(MARG,y,W,48,"F");
+  doc.setDrawColor(...GRIGIO);doc.setLineWidth(0.3);doc.rect(MARG,y,W,48,"D");
+  doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(...BLU);
+  doc.text("Dati Identificativi",MARG+4,y+8);
+  const campi=[["Azienda / Ragione Sociale",data.azienda],["Data sopralluogo",data.data],["Luogo",data.luogo],["Operatore / Consulente",data.operatore]];
+  campi.forEach(([l,v],i)=>{
+    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...NERO);
+    doc.text(l+":",MARG+4,y+16+i*8);
+    doc.setFont("helvetica","normal");doc.text(v||"—",MARG+58,y+16+i*8);
+  });
+  y+=54;
+
+  if(data.tipo==="guidata"){
+    // Header tabella
+    doc.setFillColor(...NERO);doc.rect(MARG,y,W,7,"F");
+    doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(8);
+    doc.text(" #",MARG+1,y+5);
+    doc.text("  Checklist D.Lgs 81/08 — Categoria / Voce",MARG+10,y+5);
+    doc.text("N/A",MARG+W-10,y+5,{align:"center"});
+    doc.setTextColor(...NERO);y+=8;
+
+    for(let i=0;i<data.voci.length;i++){
+      const voce=data.voci[i];
+      const risp=data.risposte[i]||{};
+      const isNA=risp.risposta==="N/A";
+      const nota=risp.nota||"";
+      const foto=risp.foto||[];
+      const sfondo=i%2===0?[230,235,245]:[242,246,252];
+
+      const lines=doc.splitTextToSize(voce.categoria,155);
+      const hCat=lines.length*6;
+      let hBlock=hCat+4;
+      if(voce.rif&&data.mostraRif)hBlock+=Math.ceil(voce.rif.length/90)*4.5+1;
+      if(voce.sanzioni&&data.mostraSanzioni)hBlock+=Math.ceil(voce.sanzioni.length/90)*4.5+1;
+      if(nota)hBlock+=Math.ceil(nota.length/90)*4.5+2;
+
+      if(y+hBlock>278){doc.addPage();pgNum++;hdrFtr();y=20;}
+
+      doc.setFillColor(...sfondo);
+      doc.rect(MARG,y,W,hCat+4,"F");
+      doc.setDrawColor(...GRIGIO);doc.setLineWidth(0.2);
+      doc.rect(MARG,y,10,hCat+4,"D");
+      doc.rect(MARG+10,y,W-20,hCat+4,"D");
+      doc.rect(MARG+W-10,y,10,hCat+4,"D");
+      doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(80,80,100);
+      doc.text(String(i+1),MARG+5,y+hCat/2+2.5,{align:"center"});
+      doc.setTextColor(...NERO);doc.setFont("helvetica","bold");doc.setFontSize(8.5);
+      doc.text(lines,MARG+12,y+6);
+      if(isNA){
+        doc.setFillColor(...GRIGIO);doc.rect(MARG+W-10,y,10,hCat+4,"F");
+        doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(7);
+        doc.text("N/A",MARG+W-5,y+hCat/2+2.5,{align:"center"});doc.setTextColor(...NERO);
+      }
+      y+=hCat+4;
+
+      if(voce.rif&&data.mostraRif){
+        doc.setFont("helvetica","italic");doc.setFontSize(7);doc.setTextColor(70,70,70);
+        const rl=wrapText(doc,"  Rif. normativi: "+voce.rif,W-4);
+        const hR=rl.length*4.8+2;
+        if(y+hR>278){doc.addPage();pgNum++;hdrFtr();y=20;}
+        doc.setFillColor(250,250,250);doc.rect(MARG,y,W,hR,"FD");
+        rl.forEach((ln,li)=>doc.text(ln,MARG+2,y+4.8+li*4.8));
+        y+=hR;
+      }
+      if(voce.sanzioni&&data.mostraSanzioni){
+        doc.setFont("helvetica","italic");doc.setFontSize(7);doc.setTextColor(100,50,0);
+        const sl=wrapText(doc,"  Sanzioni: "+voce.sanzioni,W-4);
+        const hS=sl.length*4.8+2;
+        if(y+hS>278){doc.addPage();pgNum++;hdrFtr();y=20;}
+        doc.setFillColor(250,250,250);doc.rect(MARG,y,W,hS,"FD");
+        sl.forEach((ln,li)=>doc.text(ln,MARG+2,y+4.8+li*4.8));
+        y+=hS;
+      }
+      if(nota){
+        doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...NERO);
+        const nl=wrapText(doc,"  Osservazioni: "+nota,W-4);
+        const hN=nl.length*5.2+3;
+        if(y+hN>278){doc.addPage();pgNum++;hdrFtr();y=20;}
+        doc.setFillColor(242,242,242);doc.rect(MARG,y,W,hN,"FD");
+        nl.forEach((ln,li)=>doc.text(ln,MARG+2,y+5.2+li*5.2));
+        y+=hN;
+      }
+      y+=2;
+
+      // Foto griglia 3
+      if(foto.length>0){
+        const PER=3,GAP=3;
+        const wC=(W-GAP*(PER-1))/PER;
+        const H_DID_LINE=4.2; // altezza per riga didascalia in mm
+        const FONT_DID=6.5;
+        for(let f=0;f<foto.length;f+=PER){
+          const riga=foto.slice(f,f+PER);
+          const hImg=44;
+          // Calcola altezza max didascalia nella riga
+          doc.setFont("helvetica","italic");doc.setFontSize(FONT_DID);
+          let maxDidH=0;
+          const rigaLines=riga.map(ft=>{
+            if(!ft.didascalia)return[];
+            const dl=doc.splitTextToSize(ft.didascalia,wC-3);
+            const h=dl.length*H_DID_LINE+3;
+            if(h>maxDidH)maxDidH=h;
+            return dl;
+          });
+          const hCella=hImg+(maxDidH||0);
+          if(y+hCella+4>278){doc.addPage();pgNum++;hdrFtr();y=20;}
+          riga.forEach((ft,j)=>{
+            const x=MARG+j*(wC+GAP);
+            try{doc.addImage("data:image/jpeg;base64,"+ft.b64,"JPEG",x,y,wC,hImg);}catch(e){}
+            doc.setDrawColor(...GRIGIO);doc.rect(x,y,wC,hImg,"D");
+            if(maxDidH>0){
+              doc.setFillColor(235,235,235);
+              doc.rect(x,y+hImg,wC,maxDidH,"F");
+              doc.setDrawColor(...GRIGIO);doc.line(x,y+hImg,x+wC,y+hImg);
+              doc.rect(x,y+hImg,wC,maxDidH,"D");
+              if(ft.didascalia){
+                doc.setFont("helvetica","italic");doc.setFontSize(FONT_DID);doc.setTextColor(60,60,60);
+                const dl=rigaLines[j];
+                dl.forEach((ln,li)=>{
+                  doc.text(ln,x+wC/2,y+hImg+3+li*H_DID_LINE,{align:"center"});
+                });
+              }
+            }
+          });
+          y+=hCella+4;
+          doc.setTextColor(...NERO);
+        }
+      }
+    }
+  } else {
+    // Libera
+    if(y+12>278){doc.addPage();pgNum++;hdrFtr();y=20;}
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...BLU);
+    doc.text("Annotazioni e Osservazioni",MARG,y+6);y+=10;
+    for(let i=0;i<(data.note||[]).length;i++){
+      const nota=data.note[i];
+      const foto=data.foto?.[i]||[];
+      if(y+16>278){doc.addPage();pgNum++;hdrFtr();y=20;}
+      doc.setFillColor(230,235,245);doc.rect(MARG,y,W,6.5,"F");
+      doc.setFont("helvetica","bold");doc.setFontSize(8);doc.setTextColor(60,60,80);
+      doc.text("  Punto "+(i+1),MARG,y+4.5);y+=6.5;
+      const nl=wrapText(doc,"  "+nota,W-4);
+      const hN=nl.length*5.5+2;
+      doc.setFillColor(255,255,255);doc.rect(MARG,y,W,hN,"FD");
+      doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...NERO);
+      nl.forEach((ln,li)=>doc.text(ln,MARG+2,y+5.5+li*5.5));
+      y+=hN+3;
+      if(foto.length>0){
+        const PER=3,GAP=3,wC=(W-GAP*(PER-1))/PER;
+        for(let f=0;f<foto.length;f+=PER){
+          const riga=foto.slice(f,f+PER);
+          if(y+44+8>278){doc.addPage();pgNum++;hdrFtr();y=20;}
+          riga.forEach((ft,j)=>{
+            const x=MARG+j*(wC+GAP);
+            try{doc.addImage("data:image/jpeg;base64,"+ft.b64,"JPEG",x,y,wC,44);}catch(e){}
+            doc.setDrawColor(...GRIGIO);doc.rect(x,y,wC,44,"D");
+          });
+          y+=44+6;
+        }
+      }
+    }
+  }
+
+  // Firme
+  if(y>235){doc.addPage();pgNum++;hdrFtr();y=20;}
+  doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...NERO);
+  doc.text("Firme",MARG,y+6);y+=8;
+  [["Consulente / Operatore",data.firmaConsulente],["Responsabile Azienda",data.firmaCliente]].forEach(([lbl,b64],idx)=>{
+    const x=idx===0?MARG:MARG+94;
+    doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(80,80,80);
+    doc.text(lbl.toUpperCase(),x,y+4);
+    doc.setDrawColor(...GRIGIO);doc.setLineWidth(0.3);doc.rect(x,y+6,80,28,"D");
+    if(b64){try{doc.addImage("data:image/png;base64,"+b64,"PNG",x+1,y+7,78,26);}catch(e){}}
+    else{
+      doc.setFont("helvetica","italic");doc.setFontSize(8);doc.setTextColor(170,170,170);
+      doc.text("(firma non apposta)",x+40,y+21,{align:"center"});
+    }
+    doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(120,120,120);
+    doc.text("Data: "+(data.data||""),x+40,y+36,{align:"center"});
+  });
+
+  return doc.output("blob");
+}
+
+function scarica(blob,azienda,data){
+  const safe=(azienda||"audit").replace(/[^a-z0-9]/gi,"_").substring(0,30);
+  const dt=(data||"").replace(/\//g,"")||new Date().toISOString().slice(0,10).replace(/-/g,"");
+  const nome=`${dt}_${safe}_checklist81.pdf`;
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=nome;a.click();
+  URL.revokeObjectURL(url);
+  setStato("✅ PDF salvato: "+nome,"ok");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SALVA / CARICA JSON
+// ═══════════════════════════════════════════════════════════════
+function salvaJSON(){
+  const dati={
+    versione:"4",
+    azienda:getDatiAzienda(),
+    guidata:{
+      risposte:voci.filter(v=>v.attiva).map((_,i)=>getRisposta(i)),
+      voci_cfg:voci,
+      mostraRif:document.getElementById("opt-rif").checked,
+      mostraSanzioni:document.getElementById("opt-san").checked,
+    },
+    libera:{note:noteLibere},
+  };
+  const az=dati.azienda;
+  const safe=(az.azienda||"audit").replace(/[^a-z0-9]/gi,"_").substring(0,30);
+  const dt=(az.data||"").replace(/\//g,"")||new Date().toISOString().slice(0,10).replace(/-/g,"");
+  const nome=`${dt}_${safe}_checklist81.json`;
+  const blob=new Blob([JSON.stringify(dati,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=nome;a.click();
+  URL.revokeObjectURL(url);
+  setStato("✅ Rapporto salvato: "+nome,"ok");
+}
+
+function caricaJSON(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.azienda){
+        const az=d.azienda;
+        document.getElementById("f-azienda").value=az.azienda||"";
+        document.getElementById("f-data").value=az.data||"";
+        document.getElementById("f-luogo").value=az.luogo||"";
+        document.getElementById("f-operatore").value=az.operatore||"";
+      }
+      if(d.guidata?.voci_cfg)voci=d.guidata.voci_cfg.map(v=>({...v,attiva:v.attiva!==false}));
+      if(d.guidata?.risposte)risposte=d.guidata.risposte;
+      if(d.guidata?.mostraRif!==undefined)document.getElementById("opt-rif").checked=d.guidata.mostraRif;
+      if(d.guidata?.mostraSanzioni!==undefined)document.getElementById("opt-san").checked=d.guidata.mostraSanzioni;
+      if(d.libera?.note)noteLibere=d.libera.note;
+      renderVociList();renderNoteLibere();
+      setStato("✅ Caricato: "+file.name,"ok");
+    }catch(err){setStato("❌ File non valido.","err");}
+  };
+  r.readAsText(file);
+  e.target.value="";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════════════════
+function resetApp(){
+  if(!confirm("Azzerare tutti i dati inseriti?"))return;
+  voci=VOCI_DEFAULT.map(v=>({...v,attiva:true}));
+  risposte=[];
+  noteLibere=[{testo:"",foto:[]}];
+  firme={consulente:null,cliente:null};
+  document.getElementById("f-azienda").value="";
+  document.getElementById("f-data").value=oggi();
+  document.getElementById("f-luogo").value="";
+  document.getElementById("f-operatore").value="";
+  clearFirma("consulente");clearFirma("cliente");
+  renderVociList();renderNoteLibere();
+  document.getElementById("checklist-items").innerHTML="";
+  setStato("","");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════════════════
+function getDatiAzienda(){
+  return{
+    azienda:document.getElementById("f-azienda").value.trim(),
+    data:document.getElementById("f-data").value.trim(),
+    luogo:document.getElementById("f-luogo").value.trim(),
+    operatore:document.getElementById("f-operatore").value.trim(),
+    firmaConsulente:firme.consulente,
+    firmaCliente:firme.cliente,
+  };
+}
+
+function valida(){
+  if(!document.getElementById("f-azienda").value.trim()){
+    setStato("⚠️ Inserire la ragione sociale nella scheda Dati azienda.","warn");
+    document.querySelectorAll(".tab-btn").forEach(b=>{if(b.dataset.tab==="azienda"){b.click();}});
+    return false;
+  }
+  return true;
+}
+
+function setStato(msg,cls){
+  const el=document.getElementById("stato");
+  el.textContent=msg;
+  el.className=cls||"";
+}
+
+function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+function fileToB64(file){
+  return new Promise(res=>{
+    const r=new FileReader();
+    r.onload=e=>res(e.target.result.split(",")[1]);
+    r.readAsDataURL(file);
+  });
+}
+
+// Init data field
+document.getElementById("f-data").value=oggi();
+</script>
+</body>
+</html>
