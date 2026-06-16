@@ -539,13 +539,22 @@ async function addFoto(files,mode,idx){
     else{if(noteLibere[idx])noteLibere[idx].foto=f;}
   };
   const foto=[...getFoto()];
+  if(files.length>1)setStato(`⏳ Elaborazione di ${files.length} foto...`,"");
+  let errori=0;
   for(const f of files){
-    const b64=await fileToB64(f);
-    foto.push({b64,didascalia:""});
+    try{
+      const {b64,w,h}=await comprimiFoto(f);
+      foto.push({b64,w,h,didascalia:""});
+    }catch(err){
+      errori++;
+      console.error("Errore elaborazione foto:",f.name,err);
+    }
   }
   setFoto(foto);
   const cont=document.getElementById(`dz-${mode==="guidata"?idx:("lib-"+idx)}`);
   if(cont?._render)cont._render(); else if(cont){renderDropZone(cont,idx,mode);}
+  if(errori>0)setStato(`⚠️ ${errori} foto non elaborabili, ignorate.`,"warn");
+  else if(files.length>1)setStato(`✅ ${files.length} foto aggiunte.`,"ok");
 }
 
 function rimuoviFoto(mode,idx,j){
@@ -726,6 +735,21 @@ async function buildPDF(data){
     doc.text("Generato da Audit81 Web App",196,291,{align:"right"});
     doc.setTextColor(...NERO);
   }
+
+  // Inserisce la foto mantenendo le proporzioni originali (niente piu'
+  // foto "schiacciate"): calcola la dimensione massima che ci sta nel
+  // riquadro maxW x maxH e la centra, senza deformarla.
+  function fitImg(ft,maxW,maxH){
+    let iw=ft.w,ih=ft.h;
+    if(!iw||!ih){
+      try{const p=doc.getImageProperties("data:image/jpeg;base64,"+ft.b64);iw=p.width;ih=p.height;}catch(e){}
+    }
+    if(!iw||!ih)return{w:maxW,h:maxH,ox:0,oy:0};
+    const sc=Math.min(maxW/iw,maxH/ih);
+    const w=iw*sc,h=ih*sc;
+    return{w,h,ox:(maxW-w)/2,oy:(maxH-h)/2};
+  }
+
   hdrFtr();
   let y=20;
 
@@ -837,7 +861,8 @@ async function buildPDF(data){
           if(y+hCella+4>278){doc.addPage();pgNum++;hdrFtr();y=20;}
           riga.forEach((ft,j)=>{
             const x=MARG+j*(wC+GAP);
-            try{doc.addImage("data:image/jpeg;base64,"+ft.b64,"JPEG",x,y,wC,hImg);}catch(e){}
+            const fit=fitImg(ft,wC,hImg);
+            try{doc.addImage("data:image/jpeg;base64,"+ft.b64,"JPEG",x+fit.ox,y+fit.oy,fit.w,fit.h);}catch(e){}
             doc.setDrawColor(...GRIGIO);doc.rect(x,y,wC,hImg,"D");
             if(maxDidH>0){
               doc.setFillColor(235,235,235);
@@ -883,7 +908,8 @@ async function buildPDF(data){
           if(y+44+8>278){doc.addPage();pgNum++;hdrFtr();y=20;}
           riga.forEach((ft,j)=>{
             const x=MARG+j*(wC+GAP);
-            try{doc.addImage("data:image/jpeg;base64,"+ft.b64,"JPEG",x,y,wC,44);}catch(e){}
+            const fit=fitImg(ft,wC,44);
+            try{doc.addImage("data:image/jpeg;base64,"+ft.b64,"JPEG",x+fit.ox,y+fit.oy,fit.w,fit.h);}catch(e){}
             doc.setDrawColor(...GRIGIO);doc.rect(x,y,wC,44,"D");
           });
           y+=44+6;
@@ -1025,11 +1051,35 @@ function setStato(msg,cls){
 
 function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
-function fileToB64(file){
-  return new Promise(res=>{
-    const r=new FileReader();
-    r.onload=e=>res(e.target.result.split(",")[1]);
-    r.readAsDataURL(file);
+// Le foto vengono ridisegnate su canvas: cosi (1) si ridimensionano e
+// ricomprimono per mantenere leggero il JSON anche con molte foto, e
+// (2) si sfrutta la decodifica nativa del browser (che applica gia' la
+// rotazione EXIF corretta) cosi le foto non escono storte/sdraiate nel
+// PDF, dove jsPDF inserisce i byte JPEG cosi come sono senza leggere il
+// tag EXIF di orientamento.
+const FOTO_MAX_DIM=1100; // px sul lato maggiore
+const FOTO_QUALITY=0.72; // qualita' JPEG (0-1)
+
+function comprimiFoto(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const w=img.naturalWidth,h=img.naturalHeight;
+      if(!w||!h){reject(new Error("immagine non leggibile"));return;}
+      const scale=Math.min(1,FOTO_MAX_DIM/Math.max(w,h));
+      const outW=Math.max(1,Math.round(w*scale));
+      const outH=Math.max(1,Math.round(h*scale));
+      const canvas=document.createElement("canvas");
+      canvas.width=outW;canvas.height=outH;
+      const ctx=canvas.getContext("2d");
+      ctx.fillStyle="#fff";ctx.fillRect(0,0,outW,outH);
+      ctx.drawImage(img,0,0,outW,outH);
+      resolve({b64:canvas.toDataURL("image/jpeg",FOTO_QUALITY).split(",")[1],w:outW,h:outH});
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("immagine non valida"));};
+    img.src=url;
   });
 }
 
